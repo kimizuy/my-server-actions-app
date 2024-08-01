@@ -1,16 +1,25 @@
 "use client";
 
-// import { initialState, years } from "./schema";
-import { filterVideos, initialState, years } from "./actions";
-import { useFormState } from "react-dom";
+import { filterVideos } from "./actions";
+import { useFormState, useFormStatus } from "react-dom";
+import { initialState, years } from "./schema";
+import { ComponentProps, useState } from "react";
 
 export function Form() {
   const [state, formAction] = useFormState(filterVideos, initialState);
+  const [readMore, setReadMore] = useState(false);
 
   return (
     <div className="flex gap-8">
-      <div>
-        <form action={formAction} className="grid gap-4">
+      <div className="w-64">
+        <form
+          id="search"
+          action={(e) => {
+            formAction(e);
+            setReadMore(false);
+          }}
+          className="grid gap-4"
+        >
           <div className="flex gap-2">
             {years.map((year) => (
               <label key={year}>
@@ -36,24 +45,53 @@ export function Form() {
               </select>
             </label>
           </div>
-
-          <button type="submit" onClick={() => console.log("onclick!")}>
-            検索
-          </button>
+          <input
+            type="hidden"
+            name="readMore"
+            value={readMore ? "true" : "false"}
+          />
+          <SubmitButton>検索</SubmitButton>
         </form>
       </div>
 
-      <ul className="grid gap-4">
-        {state?.videos.map((video, i) => (
-          <li key={video.id}>
-            <p className="flex gap-2">
-              <span className="font-bold">{i + 1}</span>
-              <span>{video.publishedAt}</span>
-            </p>
-            <h2>{video.title}</h2>
-          </li>
-        ))}
-      </ul>
+      <div className="flex-1">
+        <ul className="grid gap-4">
+          {state.videos.map((video, i) => (
+            <li key={video.id}>
+              <p className="flex gap-2">
+                <span className="font-bold">{i + 1}</span>
+                <span>{video.publishedAt}</span>
+              </p>
+              <h2>{video.title}</h2>
+            </li>
+          ))}
+        </ul>
+
+        {state.canReadMore ? (
+          <SubmitButton
+            form="search"
+            className="mt-12"
+            onClick={() => setReadMore(true)}
+          >
+            もっと見る
+          </SubmitButton>
+        ) : null}
+      </div>
     </div>
+  );
+}
+
+type SubmitButtonProps = { children: string } & Omit<
+  ComponentProps<"button">,
+  "children" | "type" | "disabled"
+>;
+
+function SubmitButton({ children, ...rest }: SubmitButtonProps) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button {...rest} type="submit" disabled={pending}>
+      {children}
+    </button>
   );
 }

@@ -1,21 +1,8 @@
+"use server";
+
 import uFuzzy from "@leeoniya/ufuzzy";
-import videosJson from "./api/videos/videos.json";
-
-const ITEMS_COUNT = 3;
-
-export const years = Array.from(
-  new Set(videosJson.map((video) => video.publishedAt.slice(0, 4)))
-);
-
-export const initialState = {
-  videos: videosJson.slice(0, ITEMS_COUNT),
-  formData: {
-    keyword: "",
-    order: "desc",
-    years,
-    cursor: videosJson[ITEMS_COUNT - 1].id || null,
-  },
-};
+import { ITEMS_COUNT, initialState, years } from "./schema";
+import videosJson from "./videos.json";
 
 type FilterVideosState = typeof initialState;
 
@@ -33,59 +20,64 @@ export async function filterVideos(
   formData: FormData
 ): Promise<FilterVideosState> {
   const keyword = formData.get("keyword") as string | null;
-  const order = formData.get("order") as string | null;
+  const order = formData.get("order") as "desc" | "asc" | null;
   const selectedYears = years.filter((year) => formData.has(year));
+  const readMore = formData.get("readMore") === "true";
 
-  let filteredVideos = videosJson;
+  const searchedVideos = (() => {
+    if (!keyword) return videosJson;
+    const haystack = videosJson.map((v) => `${v.title}¦${v.description}`);
+    const idxs = uf.filter(haystack, keyword || "");
+    const result = idxs?.map((i) => videosJson[i]);
+    if (!result) return videosJson;
+    return result;
+  })();
 
-  const hasOrderChanged = order !== prevState.formData.order;
-  const hasYearsChanged = !(
-    selectedYears.length === prevState.formData.years.length &&
-    JSON.stringify(selectedYears) === JSON.stringify(prevState.formData.years)
-  );
-  const hasKeywordChanged = keyword !== prevState.formData.keyword;
-  const hasFormDataChanged =
-    hasOrderChanged || hasYearsChanged || hasKeywordChanged;
+  if (readMore) {
+    console.log("readMore!");
 
-  if (!hasFormDataChanged) {
-    return prevState;
+    const cursor = prevState.cursor;
+    console.log("cursor", cursor);
+
+    if (!cursor) return prevState;
+
+    const startIndex =
+      searchedVideos.findIndex((video) => video.id === cursor) + 1;
+    console.log("startIndex", startIndex);
+
+    const slicedVideos = searchedVideos.slice(
+      startIndex,
+      startIndex + ITEMS_COUNT
+    );
+    console.log("slicedVideos", slicedVideos);
+
+    return {
+      ...prevState,
+      videos: [...prevState.videos, ...slicedVideos],
+      cursor: slicedVideos.length
+        ? slicedVideos[slicedVideos.length - 1].id
+        : null,
+      canReadMore: searchedVideos.length > startIndex + ITEMS_COUNT,
+    };
   }
 
-  if (hasOrderChanged) {
-    filteredVideos = filteredVideos.reverse();
-  }
+  const filteredVideos = searchedVideos.filter((video) => {
+    const matchesYear = selectedYears.includes(video.publishedAt.slice(0, 4));
+    return matchesYear;
+  });
 
-  filteredVideos = filteredVideos.filter((video) =>
-    selectedYears.includes(video.publishedAt.slice(0, 4))
-  );
-
-  if (keyword) {
-    const decoded = decodeURIComponent(keyword || "");
-    const haystack = filteredVideos?.map((v) => `${v.title}¦${v.description}`);
-    const idxs = uf.filter(haystack, decoded);
-    if (idxs) {
-      filteredVideos = idxs.map((idx) => filteredVideos[idx]);
-    }
-  }
-
-  const cursor = prevState.videos.length
-    ? prevState.videos[prevState.videos.length - 1].id
-    : null;
-  const startIndex = cursor
-    ? filteredVideos.findIndex((video) => video.id === cursor) + 1
-    : 0;
-  filteredVideos = filteredVideos.slice(0, startIndex + ITEMS_COUNT);
-  // filteredVideos = filteredVideos.slice(0, ITEMS_COUNT);
+  const sortedVideos =
+    order === "desc" ? filteredVideos : [...filteredVideos].reverse();
 
   return {
-    videos: filteredVideos,
-    formData: {
-      keyword: keyword || prevState.formData.keyword,
-      order: order || prevState.formData.order,
-      years: selectedYears,
-      cursor: filteredVideos.length
-        ? filteredVideos[filteredVideos.length - 1].id
+    videos: sortedVideos.slice(0, ITEMS_COUNT),
+    keyword: keyword || "",
+    order: order || "desc",
+    years: selectedYears,
+    cursor:
+      sortedVideos.length > ITEMS_COUNT
+        ? sortedVideos[sortedVideos.length - 1].id
         : null,
-    },
+    canReadMore: sortedVideos.length > ITEMS_COUNT,
   };
 }
