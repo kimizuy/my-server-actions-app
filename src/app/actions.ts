@@ -23,11 +23,16 @@ export async function filterVideos(
   const order = formData.get("order")?.toString() || "desc";
   const years = initialYears.filter((year) => formData.has(year));
 
+  const filteredVideos = videosJson.filter((video) => {
+    const matchesYear = years.includes(video.publishedAt.slice(0, 4));
+    return matchesYear;
+  });
+
   const searchedVideos = (() => {
-    if (!keyword) return videosJson;
-    const haystack = videosJson.map((v) => v.title);
+    if (!keyword) return filteredVideos;
+    const haystack = filteredVideos.map((v) => v.title);
     const idxs = uf.filter(haystack, keyword || "");
-    const result = idxs?.map((i) => videosJson[i]);
+    const result = idxs?.map((i) => filteredVideos[i]);
     if (!result || result.length === 0) return [];
     return result;
   })();
@@ -60,19 +65,16 @@ export async function filterVideos(
   //   };
   // }
 
-  const filteredVideos = searchedVideos.filter((video) => {
-    const matchesYear = years.includes(video.publishedAt.slice(0, 4));
-    return matchesYear;
-  });
-
   const sortedVideos =
-    order === "desc" ? filteredVideos : [...filteredVideos].reverse();
+    order === "desc" ? searchedVideos : [...searchedVideos].reverse();
 
   const nextCursor =
     sortedVideos.length > ITEMS_COUNT ? sortedVideos[ITEMS_COUNT].id : null;
 
+  const videos = sortedVideos.slice(0, ITEMS_COUNT);
+
   return {
-    videos: sortedVideos.slice(0, ITEMS_COUNT),
+    videos,
     keyword,
     order,
     years,
