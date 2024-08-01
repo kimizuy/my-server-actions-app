@@ -1,7 +1,7 @@
 "use server";
 
 import uFuzzy from "@leeoniya/ufuzzy";
-import { ITEMS_COUNT, initialState, years } from "./schema";
+import { ITEMS_COUNT, initialState, initialYears } from "./schema";
 import videosJson from "./videos.json";
 
 type FilterVideosState = typeof initialState;
@@ -19,65 +19,63 @@ export async function filterVideos(
   prevState: FilterVideosState,
   formData: FormData
 ): Promise<FilterVideosState> {
-  const keyword = formData.get("keyword") as string | null;
-  const order = formData.get("order") as "desc" | "asc" | null;
-  const selectedYears = years.filter((year) => formData.has(year));
-  const readMore = formData.get("readMore") === "true";
+  const keyword = formData.get("keyword")?.toString().trim() || "";
+  const order = formData.get("order")?.toString() || "desc";
+  const years = initialYears.filter((year) => formData.has(year));
 
   const searchedVideos = (() => {
     if (!keyword) return videosJson;
-    const haystack = videosJson.map((v) => `${v.title}¦${v.description}`);
+    const haystack = videosJson.map((v) => v.title);
     const idxs = uf.filter(haystack, keyword || "");
     const result = idxs?.map((i) => videosJson[i]);
-    if (!result) return videosJson;
+    if (!result || result.length === 0) return [];
     return result;
   })();
 
-  if (readMore) {
-    console.log("readMore!");
+  // if (readMore) {
+  //   console.log("readMore!");
 
-    const cursor = prevState.cursor;
-    console.log("cursor", cursor);
+  //   const cursor = prevState.cursor;
+  //   console.log("cursor", cursor);
 
-    if (!cursor) return prevState;
+  //   if (!cursor) return prevState;
 
-    const startIndex =
-      searchedVideos.findIndex((video) => video.id === cursor) + 1;
-    console.log("startIndex", startIndex);
+  //   const startIndex =
+  //     searchedVideos.findIndex((video) => video.id === cursor) + 1;
+  //   console.log("startIndex", startIndex);
 
-    const slicedVideos = searchedVideos.slice(
-      startIndex,
-      startIndex + ITEMS_COUNT
-    );
-    console.log("slicedVideos", slicedVideos);
+  //   const slicedVideos = searchedVideos.slice(
+  //     startIndex,
+  //     startIndex + ITEMS_COUNT
+  //   );
+  //   console.log("slicedVideos", slicedVideos);
 
-    return {
-      ...prevState,
-      videos: [...prevState.videos, ...slicedVideos],
-      cursor: slicedVideos.length
-        ? slicedVideos[slicedVideos.length - 1].id
-        : null,
-      canReadMore: searchedVideos.length > startIndex + ITEMS_COUNT,
-    };
-  }
+  //   return {
+  //     ...prevState,
+  //     videos: [...prevState.videos, ...slicedVideos],
+  //     cursor: slicedVideos.length
+  //       ? slicedVideos[slicedVideos.length - 1].id
+  //       : null,
+  //     canReadMore: searchedVideos.length > startIndex + ITEMS_COUNT,
+  //   };
+  // }
 
   const filteredVideos = searchedVideos.filter((video) => {
-    const matchesYear = selectedYears.includes(video.publishedAt.slice(0, 4));
+    const matchesYear = years.includes(video.publishedAt.slice(0, 4));
     return matchesYear;
   });
 
   const sortedVideos =
     order === "desc" ? filteredVideos : [...filteredVideos].reverse();
 
+  const nextCursor =
+    sortedVideos.length > 0 ? sortedVideos[ITEMS_COUNT].id : null;
+
   return {
     videos: sortedVideos.slice(0, ITEMS_COUNT),
-    keyword: keyword || "",
-    order: order || "desc",
-    years: selectedYears,
-    cursor:
-      sortedVideos.length > ITEMS_COUNT
-        ? sortedVideos[sortedVideos.length - 1].id
-        : null,
-    canReadMore: sortedVideos.length > ITEMS_COUNT,
+    keyword,
+    order,
+    years,
+    nextCursor,
   };
 }

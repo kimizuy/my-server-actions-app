@@ -2,26 +2,20 @@
 
 import { filterVideos } from "./actions";
 import { useFormState, useFormStatus } from "react-dom";
-import { initialState, years } from "./schema";
+import { initialState, initialYears } from "./schema";
 import { ComponentProps, useState } from "react";
 
 export function Form() {
   const [state, formAction] = useFormState(filterVideos, initialState);
-  const [readMore, setReadMore] = useState(false);
+  // const [readMore, setReadMore] = useState(false);
+  console.log("keyword", state.keyword);
 
   return (
     <div className="flex gap-8">
       <div className="w-64">
-        <form
-          id="search"
-          action={(e) => {
-            formAction(e);
-            setReadMore(false);
-          }}
-          className="grid gap-4"
-        >
+        <form id="search" action={formAction} className="grid gap-4">
           <div className="flex gap-2">
-            {years.map((year) => (
+            {initialYears.map((year) => (
               <label key={year}>
                 <input type="checkbox" name={year} defaultChecked />
                 {year}
@@ -45,11 +39,11 @@ export function Form() {
               </select>
             </label>
           </div>
-          <input
+          {/* <input
             type="hidden"
             name="readMore"
             value={readMore ? "true" : "false"}
-          />
+          /> */}
           <SubmitButton>検索</SubmitButton>
         </form>
       </div>
@@ -66,16 +60,6 @@ export function Form() {
             </li>
           ))}
         </ul>
-
-        {state.canReadMore ? (
-          <SubmitButton
-            form="search"
-            className="mt-12"
-            onClick={() => setReadMore(true)}
-          >
-            もっと見る
-          </SubmitButton>
-        ) : null}
       </div>
     </div>
   );
