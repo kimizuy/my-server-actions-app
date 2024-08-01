@@ -69,7 +69,7 @@ export async function filterVideos(
     order === "desc" ? filteredVideos : [...filteredVideos].reverse();
 
   const nextCursor =
-    sortedVideos.length > 0 ? sortedVideos[ITEMS_COUNT].id : null;
+    sortedVideos.length > ITEMS_COUNT ? sortedVideos[ITEMS_COUNT].id : null;
 
   return {
     videos: sortedVideos.slice(0, ITEMS_COUNT),
