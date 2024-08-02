@@ -63,7 +63,7 @@ export function Form() {
                   type="checkbox"
                   name="year"
                   value={year}
-                  defaultChecked={years.includes(year)}
+                  defaultChecked
                 />
                 {year}
               </label>
@@ -73,23 +73,14 @@ export function Form() {
           <div>
             <label className="flex gap-2">
               <span>キーワード</span>
-              <input
-                type="text"
-                name="keyword"
-                className="text-black"
-                defaultValue={keyword || ""}
-              />
+              <input type="text" name="keyword" className="text-black" />
             </label>
           </div>
 
           <div>
             <label className="flex gap-2">
               <span>並び順</span>
-              <select
-                name="order"
-                defaultValue={order || "desc"}
-                className="text-black"
-              >
+              <select name="order" defaultValue="desc" className="text-black">
                 <option value="desc">降順</option>
                 <option value="asc">昇順</option>
               </select>
