@@ -10,6 +10,12 @@ export async function filterVideos(
   prevState: FilterVideosState,
   formData: FormData
 ): Promise<FilterVideosState> {
+  const shouldLoadMore = formData.get("shouldLoadMore") === "true";
+
+  if (shouldLoadMore) {
+    return loadMore(prevState);
+  }
+
   const keyword = formData.get("keyword")?.toString().trim() || "";
   const order = (formData.get("order")?.toString() as "asc" | "desc") || "desc";
   const years = initialYears.filter((year) => formData.has(year));
@@ -17,10 +23,8 @@ export async function filterVideos(
   const filteredVideosByYear = filterVideosByYear(videosJson, years);
   const searchedVideos = searchVideos(filteredVideosByYear, keyword);
   const sortedVideos = sortVideos(searchedVideos, order);
-
   const nextCursor =
     sortedVideos.length > ITEMS_COUNT ? sortedVideos[ITEMS_COUNT].id : null;
-
   const videos = sortedVideos.slice(0, ITEMS_COUNT);
 
   return {
@@ -60,4 +64,9 @@ function searchVideos(videos: Video[], keyword: string): Video[] {
 function sortVideos(videos: Video[], order: "asc" | "desc"): Video[] {
   const result = order === "desc" ? videos : [...videos].reverse();
   return result;
+}
+
+function loadMore(prevState: FilterVideosState) {
+  console.log("loadMore!");
+  return prevState;
 }

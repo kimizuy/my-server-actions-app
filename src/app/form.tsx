@@ -7,8 +7,7 @@ import { ComponentProps, useState } from "react";
 
 export function Form() {
   const [state, formAction] = useFormState(filterVideos, initialState);
-  // const [readMore, setReadMore] = useState(false);
-  console.log("keyword", state.keyword);
+  const [shouldLoadMore, setShouldLoadMore] = useState(false);
 
   return (
     <div className="flex gap-8">
@@ -39,12 +38,18 @@ export function Form() {
               </select>
             </label>
           </div>
-          {/* <input
+          <input
             type="hidden"
-            name="readMore"
-            value={readMore ? "true" : "false"}
-          /> */}
-          <SubmitButton>検索</SubmitButton>
+            name="shouldLoadMore"
+            value={shouldLoadMore.toString()}
+          />
+          <SubmitButton
+            onClick={() => {
+              setShouldLoadMore(false);
+            }}
+          >
+            検索
+          </SubmitButton>
         </form>
       </div>
 
@@ -60,6 +65,18 @@ export function Form() {
             </li>
           ))}
         </ul>
+
+        {state.nextCursor ? (
+          <SubmitButton
+            form="search"
+            className="mt-12"
+            onClick={() => {
+              setShouldLoadMore(true);
+            }}
+          >
+            もっと見る
+          </SubmitButton>
+        ) : null}
       </div>
     </div>
   );
