@@ -13,7 +13,8 @@ export async function filterVideos(
   const shouldLoadMore = formData.get("shouldLoadMore") === "true";
 
   if (shouldLoadMore) {
-    return loadMore(prevState);
+    const moreVideos = loadMoreVideos(videosJson, prevState);
+    return moreVideos;
   }
 
   const keyword = formData.get("keyword")?.toString().trim() || "";
@@ -61,12 +62,31 @@ function searchVideos(videos: Video[], keyword: string): Video[] {
   return result;
 }
 
-function sortVideos(videos: Video[], order: "asc" | "desc"): Video[] {
+function sortVideos(videos: Video[], order: string): Video[] {
   const result = order === "desc" ? videos : [...videos].reverse();
   return result;
 }
 
-function loadMore(prevState: FilterVideosState) {
-  console.log("loadMore!");
-  return prevState;
+function loadMoreVideos(videos: Video[], prevState: FilterVideosState) {
+  const filteredVideosByYear = filterVideosByYear(videos, prevState.years);
+  const searchedVideos = searchVideos(filteredVideosByYear, prevState.keyword);
+  const sortedVideos = sortVideos(searchedVideos, prevState.order);
+  const nextCursorIndex = sortedVideos.findIndex(
+    (v) => v.id === prevState.nextCursor
+  );
+  const nextVideos = sortedVideos.slice(
+    nextCursorIndex + 1,
+    nextCursorIndex + 1 + ITEMS_COUNT
+  );
+  const newVideos = [...prevState.videos, ...nextVideos];
+  const newNextCursor =
+    sortedVideos.length > newVideos.length
+      ? sortedVideos[newVideos.length].id
+      : null;
+
+  return {
+    ...prevState,
+    videos: newVideos,
+    nextCursor: newNextCursor,
+  };
 }
