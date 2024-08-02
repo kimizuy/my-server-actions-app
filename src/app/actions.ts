@@ -1,7 +1,7 @@
 "use server";
 
 import uFuzzy from "@leeoniya/ufuzzy";
-import { ITEMS_COUNT, initialState, initialYears } from "./schema";
+import { ITEMS_COUNT, initialState } from "./schema";
 import videosJson from "./videos.json";
 
 type FilterVideosState = typeof initialState;
@@ -19,7 +19,7 @@ export async function filterVideos(
 
   const keyword = formData.get("keyword")?.toString().trim() || "";
   const order = (formData.get("order")?.toString() as "asc" | "desc") || "desc";
-  const years = initialYears.filter((year) => formData.has(year));
+  const years = formData.getAll("year").map((year) => year.toString());
 
   const filteredVideosByYear = filterVideosByYear(videosJson, years);
   const searchedVideos = searchVideos(filteredVideosByYear, keyword);

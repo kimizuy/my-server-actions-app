@@ -3,20 +3,68 @@
 import { filterVideos } from "./actions";
 import { useFormState, useFormStatus } from "react-dom";
 import { initialState, initialYears } from "./schema";
-import { ComponentProps, useState } from "react";
+import { ComponentProps, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export function Form() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [state, formAction] = useFormState(filterVideos, initialState);
+  const [isInitial, setIsInitial] = useState(true);
   const [shouldLoadMore, setShouldLoadMore] = useState(false);
+  const keyword = searchParams.get("keyword");
+  const order = searchParams.get("order");
+  const years = searchParams.getAll("year");
+
+  useEffect(
+    function initialRender() {
+      if (!isInitial) return;
+      const formData = new FormData();
+      if (keyword) formData.set("keyword", keyword);
+      if (order) formData.set("order", order);
+      years.forEach((year) => {
+        formData.append("year", year);
+      });
+      formAction(formData);
+      setIsInitial(false);
+    },
+    [formAction, isInitial, keyword, order, years]
+  );
+
+  function updateSearchParams(formData: FormData) {
+    const newKeyword = formData.get("keyword");
+    const newOrder = formData.get("order");
+    const newYears = formData.getAll("year").map((year) => year.toString());
+    const newParams = new URLSearchParams();
+    if (newKeyword) newParams.set("keyword", newKeyword.toString());
+    if (newOrder) newParams.set("order", newOrder.toString());
+    newYears.forEach((year) => {
+      newParams.append("year", year);
+    });
+    if (shouldLoadMore) newParams.set("shouldLoadMore", "true");
+    router.replace("?" + newParams.toString());
+  }
 
   return (
     <div className="flex gap-8">
       <div className="w-64">
-        <form id="search" action={formAction} className="grid gap-4">
+        <form
+          id="search"
+          action={(formData) => {
+            formAction(formData);
+            updateSearchParams(formData);
+          }}
+          className="grid gap-4"
+        >
           <div className="flex gap-2">
             {initialYears.map((year) => (
               <label key={year}>
-                <input type="checkbox" name={year} defaultChecked />
+                <input
+                  type="checkbox"
+                  name="year"
+                  value={year}
+                  defaultChecked={years.includes(year)}
+                />
                 {year}
               </label>
             ))}
@@ -25,14 +73,23 @@ export function Form() {
           <div>
             <label className="flex gap-2">
               <span>キーワード</span>
-              <input type="text" name="keyword" className="text-black" />
+              <input
+                type="text"
+                name="keyword"
+                className="text-black"
+                defaultValue={keyword || ""}
+              />
             </label>
           </div>
 
           <div>
             <label className="flex gap-2">
               <span>並び順</span>
-              <select name="order" defaultValue="desc" className="text-black">
+              <select
+                name="order"
+                defaultValue={order || "desc"}
+                className="text-black"
+              >
                 <option value="desc">降順</option>
                 <option value="asc">昇順</option>
               </select>
