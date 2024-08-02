@@ -80,7 +80,7 @@ function loadMoreVideos(videos: Video[], prevState: FilterVideosState) {
   );
   const newVideos = [...prevState.videos, ...nextVideos];
   const newNextCursor =
-    sortedVideos.length > newVideos.length
+    sortedVideos.length > newVideos.length + 1
       ? sortedVideos[newVideos.length].id
       : null;
 
