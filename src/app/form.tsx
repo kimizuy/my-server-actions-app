@@ -4,10 +4,9 @@ import { filterVideos } from "./actions";
 import { useFormState, useFormStatus } from "react-dom";
 import { initialState, initialYears } from "./schema";
 import { ComponentProps, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export function Form() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [state, formAction] = useFormState(filterVideos, initialState);
   const [isInitial, setIsInitial] = useState(true);
@@ -41,8 +40,7 @@ export function Form() {
     newYears.forEach((year) => {
       newParams.append("year", year);
     });
-    if (shouldLoadMore) newParams.set("shouldLoadMore", "true");
-    router.replace("?" + newParams.toString());
+    window.history.pushState(null, "", `?${newParams.toString()}`);
   }
 
   return (
