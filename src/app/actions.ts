@@ -6,67 +6,17 @@ import videosJson from "./videos.json";
 
 type FilterVideosState = typeof initialState;
 
-const uf = new uFuzzy({
-  unicode: true,
-  interSplit: "[^\\p{L}\\d']+",
-  intraSplit: "\\p{Ll}\\p{Lu}",
-  intraBound: "\\p{L}\\d|\\d\\p{L}|\\p{Ll}\\p{Lu}",
-  intraChars: "[\\p{L}\\d']",
-  intraContr: "'\\p{L}{1,2}\\b",
-});
-
 export async function filterVideos(
   prevState: FilterVideosState,
   formData: FormData
 ): Promise<FilterVideosState> {
   const keyword = formData.get("keyword")?.toString().trim() || "";
-  const order = formData.get("order")?.toString() || "desc";
+  const order = (formData.get("order")?.toString() as "asc" | "desc") || "desc";
   const years = initialYears.filter((year) => formData.has(year));
 
-  const filteredVideos = videosJson.filter((video) => {
-    const matchesYear = years.includes(video.publishedAt.slice(0, 4));
-    return matchesYear;
-  });
-
-  const searchedVideos = (() => {
-    if (!keyword) return filteredVideos;
-    const haystack = filteredVideos.map((v) => v.title);
-    const idxs = uf.filter(haystack, keyword || "");
-    const result = idxs?.map((i) => filteredVideos[i]);
-    if (!result || result.length === 0) return [];
-    return result;
-  })();
-
-  // if (readMore) {
-  //   console.log("readMore!");
-
-  //   const cursor = prevState.cursor;
-  //   console.log("cursor", cursor);
-
-  //   if (!cursor) return prevState;
-
-  //   const startIndex =
-  //     searchedVideos.findIndex((video) => video.id === cursor) + 1;
-  //   console.log("startIndex", startIndex);
-
-  //   const slicedVideos = searchedVideos.slice(
-  //     startIndex,
-  //     startIndex + ITEMS_COUNT
-  //   );
-  //   console.log("slicedVideos", slicedVideos);
-
-  //   return {
-  //     ...prevState,
-  //     videos: [...prevState.videos, ...slicedVideos],
-  //     cursor: slicedVideos.length
-  //       ? slicedVideos[slicedVideos.length - 1].id
-  //       : null,
-  //     canReadMore: searchedVideos.length > startIndex + ITEMS_COUNT,
-  //   };
-  // }
-
-  const sortedVideos =
-    order === "desc" ? searchedVideos : [...searchedVideos].reverse();
+  const filteredByYear = filterByYear(videosJson, years);
+  const searchedVideos = searchVideos(filteredByYear, keyword);
+  const sortedVideos = sortVideos(searchedVideos, order);
 
   const nextCursor =
     sortedVideos.length > ITEMS_COUNT ? sortedVideos[ITEMS_COUNT].id : null;
@@ -80,4 +30,34 @@ export async function filterVideos(
     years,
     nextCursor,
   };
+}
+
+type Video = (typeof videosJson)[number];
+
+function filterByYear(videos: Video[], years: string[]): Video[] {
+  const result = videos.filter((video) =>
+    years.includes(video.publishedAt.slice(0, 4))
+  );
+  return result;
+}
+
+function searchVideos(videos: Video[], keyword: string): Video[] {
+  if (!keyword) return videos;
+  const haystack = videos.map((v) => v.title);
+  const uf = new uFuzzy({
+    unicode: true,
+    interSplit: "[^\\p{L}\\d']+",
+    intraSplit: "\\p{Ll}\\p{Lu}",
+    intraBound: "\\p{L}\\d|\\d\\p{L}|\\p{Ll}\\p{Lu}",
+    intraChars: "[\\p{L}\\d']",
+    intraContr: "'\\p{L}{1,2}\\b",
+  });
+  const idxs = uf.filter(haystack, keyword);
+  const result = idxs?.map((i) => videos[i]) || [];
+  return result;
+}
+
+function sortVideos(videos: Video[], order: "asc" | "desc"): Video[] {
+  const result = order === "desc" ? videos : [...videos].reverse();
+  return result;
 }
