@@ -14,8 +14,8 @@ export async function filterVideos(
   const order = (formData.get("order")?.toString() as "asc" | "desc") || "desc";
   const years = initialYears.filter((year) => formData.has(year));
 
-  const filteredByYear = filterByYear(videosJson, years);
-  const searchedVideos = searchVideos(filteredByYear, keyword);
+  const filteredVideosByYear = filterVideosByYear(videosJson, years);
+  const searchedVideos = searchVideos(filteredVideosByYear, keyword);
   const sortedVideos = sortVideos(searchedVideos, order);
 
   const nextCursor =
@@ -34,7 +34,7 @@ export async function filterVideos(
 
 type Video = (typeof videosJson)[number];
 
-function filterByYear(videos: Video[], years: string[]): Video[] {
+function filterVideosByYear(videos: Video[], years: string[]): Video[] {
   const result = videos.filter((video) =>
     years.includes(video.publishedAt.slice(0, 4))
   );
