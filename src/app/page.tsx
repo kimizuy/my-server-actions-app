@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Form } from "./form";
 
 export default async function Home() {
@@ -6,7 +7,9 @@ export default async function Home() {
       <div>
         <h1>my-server-actions-app</h1>
         <div className="mt-16">
-          <Form />
+          <Suspense>
+            <Form />
+          </Suspense>
         </div>
       </div>
     </main>
