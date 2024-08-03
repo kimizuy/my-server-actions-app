@@ -25,8 +25,9 @@ export async function filterVideos(
   const searchedVideos = searchVideos(filteredVideosByYear, keyword);
   const sortedVideos = sortVideos(searchedVideos, order);
   const nextCursor =
-    sortedVideos.length > ITEMS_COUNT ? sortedVideos[ITEMS_COUNT].id : null;
+    sortedVideos.length > ITEMS_COUNT ? sortedVideos[ITEMS_COUNT - 1].id : null;
   const videos = sortedVideos.slice(0, ITEMS_COUNT);
+  const itemCount = sortedVideos.length;
 
   return {
     videos,
@@ -34,6 +35,7 @@ export async function filterVideos(
     order,
     years,
     nextCursor,
+    itemCount,
   };
 }
 
@@ -80,13 +82,15 @@ function loadMoreVideos(videos: Video[], prevState: FilterVideosState) {
   );
   const newVideos = [...prevState.videos, ...nextVideos];
   const newNextCursor =
-    sortedVideos.length > newVideos.length + 1
-      ? sortedVideos[newVideos.length].id
+    sortedVideos.length > newVideos.length
+      ? sortedVideos[newVideos.length - 1].id
       : null;
+  const newItemCount = sortedVideos.length;
 
   return {
     ...prevState,
     videos: newVideos,
     nextCursor: newNextCursor,
+    itemCount: newItemCount,
   };
 }

@@ -11,35 +11,43 @@ export function Form() {
   const [state, formAction] = useFormState(filterVideos, initialState);
   const [isInitial, setIsInitial] = useState(true);
   const [shouldLoadMore, setShouldLoadMore] = useState(false);
-  const keyword = searchParams.get("keyword");
-  const order = searchParams.get("order");
-  const years = searchParams.getAll("year");
 
   useEffect(
     function initialRender() {
       if (!isInitial) return;
       const formData = new FormData();
+      const keyword = searchParams.get("keyword");
       if (keyword) formData.set("keyword", keyword);
+      const order = searchParams.get("order");
       if (order) formData.set("order", order);
-      years.forEach((year) => {
-        formData.append("year", year);
-      });
+      const years = searchParams.getAll("year");
+      if (years.length > 0) {
+        years.forEach((year) => {
+          formData.append("year", year);
+        });
+      } else {
+        initialYears.forEach((year) => {
+          formData.append("year", year);
+        });
+      }
       formAction(formData);
       setIsInitial(false);
     },
-    [formAction, isInitial, keyword, order, years]
+    [formAction, isInitial, searchParams]
   );
 
   function updateSearchParams(formData: FormData) {
-    const newKeyword = formData.get("keyword");
-    const newOrder = formData.get("order");
-    const newYears = formData.getAll("year").map((year) => year.toString());
     const newParams = new URLSearchParams();
+    const newKeyword = formData.get("keyword");
     if (newKeyword) newParams.set("keyword", newKeyword.toString());
+    const newOrder = formData.get("order");
     if (newOrder) newParams.set("order", newOrder.toString());
-    newYears.forEach((year) => {
-      newParams.append("year", year);
-    });
+    const newYears = formData.getAll("year").map((year) => year.toString());
+    if (newYears.length > 0) {
+      newYears.forEach((year) => {
+        newParams.append("year", year);
+      });
+    }
     window.history.pushState(null, "", `?${newParams.toString()}`);
   }
 
@@ -100,7 +108,15 @@ export function Form() {
       </div>
 
       <div className="flex-1">
-        <ul className="grid gap-4">
+        <div>
+          <p>年: {state.years.join(", ")}</p>
+          <p>キーワード: {state.keyword}</p>
+          <p>並び順: {state.order}</p>
+          <p>
+            {state.videos.length} / {state.itemCount}
+          </p>
+        </div>
+        <ul className="grid gap-4 mt-4">
           {state.videos.map((video, i) => (
             <li key={video.id}>
               <p className="flex gap-2">

@@ -11,5 +11,6 @@ export const initialState = {
   keyword: "",
   order: "desc",
   years: initialYears,
-  nextCursor: videosJson[ITEMS_COUNT].id || null,
+  nextCursor: videosJson[ITEMS_COUNT - 1].id || null,
+  itemCount: videosJson.length,
 };
